@@ -30,7 +30,9 @@ if [ $? -ne 0 ]; then
 fi
 
 # 4. Python security check (if backend files changed)
-if git diff --name-only origin/main...HEAD | grep -q "apps/backend-api/.*\.py$"; then
+# Check if origin/main exists, if not skip the diff check
+if git rev-parse --verify origin/main >/dev/null 2>&1; then
+  if git diff --name-only origin/main...HEAD | grep -q "apps/backend-api/.*\.py$"; then
   echo "🐍 Running Python security checks..."
   cd apps/backend-api
   
@@ -49,6 +51,7 @@ if git diff --name-only origin/main...HEAD | grep -q "apps/backend-api/.*\.py$";
   fi
   
   cd ../..
+  fi
 fi
 
 # 5. Build verification
@@ -86,13 +89,18 @@ fi
 # 9. Check branch protection
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
-  echo "⚠️  Warning: Pushing directly to $CURRENT_BRANCH branch."
-  echo "Consider creating a feature branch and pull request."
-  read -p "Are you sure you want to continue? (y/N) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Push cancelled."
-    exit 1
+  # Check if this is the first push
+  if ! git rev-parse --verify origin/$CURRENT_BRANCH >/dev/null 2>&1; then
+    echo "📝 First push to $CURRENT_BRANCH branch detected. Allowing initial setup..."
+  else
+    echo "⚠️  Warning: Pushing directly to $CURRENT_BRANCH branch."
+    echo "Consider creating a feature branch and pull request."
+    read -p "Are you sure you want to continue? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "❌ Push cancelled."
+      exit 1
+    fi
   fi
 fi
 

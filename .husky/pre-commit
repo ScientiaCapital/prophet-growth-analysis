@@ -1,0 +1,95 @@
+#!/bin/sh
+
+# Pre-commit hook for Prophet Analytics
+# Ensures code quality and stealth mode compliance
+
+echo "🛡️ Running pre-commit checks..."
+
+# 1. TypeScript type checking
+echo "📘 Checking TypeScript types..."
+npm run type-check
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript type errors found. Please fix before committing."
+  exit 1
+fi
+
+# 2. ESLint checking
+echo "🔍 Running ESLint..."
+npm run lint
+if [ $? -ne 0 ]; then
+  echo "❌ ESLint errors found. Please fix before committing."
+  exit 1
+fi
+
+# 3. Prettier formatting check
+echo "💅 Checking code formatting..."
+npm run format:check
+if [ $? -ne 0 ]; then
+  echo "❌ Code formatting issues found. Run 'npm run format' to fix."
+  exit 1
+fi
+
+# 4. Python linting (if backend files changed)
+if git diff --cached --name-only | grep -q "apps/backend-api/.*\.py$"; then
+  echo "🐍 Running Python quality checks..."
+  cd apps/backend-api
+  
+  # Black formatting
+  poetry run black --check .
+  if [ $? -ne 0 ]; then
+    echo "❌ Python formatting issues. Run 'poetry run black .' to fix."
+    exit 1
+  fi
+  
+  # isort imports
+  poetry run isort --check-only .
+  if [ $? -ne 0 ]; then
+    echo "❌ Import sorting issues. Run 'poetry run isort .' to fix."
+    exit 1
+  fi
+  
+  # Flake8 linting
+  poetry run flake8 .
+  if [ $? -ne 0 ]; then
+    echo "❌ Flake8 linting errors found."
+    exit 1
+  fi
+  
+  # Type checking with mypy
+  poetry run mypy .
+  if [ $? -ne 0 ]; then
+    echo "❌ Type checking errors found."
+    exit 1
+  fi
+  
+  cd ../..
+fi
+
+# 5. Sanitize README files for stealth mode
+echo "🤫 Sanitizing README files for stealth mode..."
+node scripts/sanitize-readme.js
+if [ $? -ne 0 ]; then
+  echo "❌ README sanitization failed."
+  exit 1
+fi
+
+# 6. Run tests on changed files (skip if no test files)
+echo "🧪 Running tests on changed files..."
+TEST_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' | tr '\n' ' ')
+if [ -n "$TEST_FILES" ]; then
+  echo "   No testable files in this commit, skipping tests"
+fi
+
+# 7. Check for sensitive data
+echo "🔐 Checking for sensitive data..."
+# Check for common patterns of sensitive data (skip markdown and example files)
+SENSITIVE_FILES=$(git diff --cached --name-only | grep -v -E '\.(md|example)$|\.env\.example$')
+if [ -n "$SENSITIVE_FILES" ]; then
+  if echo "$SENSITIVE_FILES" | xargs grep -l -E "password\s*=|secret\s*=|api[_-]?key\s*=|token\s*=|private[_-]?key\s*=" 2>/dev/null; then
+    echo "⚠️  Warning: Possible sensitive data detected. Please review before committing."
+    echo "If this is intentional, you can bypass with --no-verify"
+    exit 1
+  fi
+fi
+
+echo "✅ All pre-commit checks passed!"

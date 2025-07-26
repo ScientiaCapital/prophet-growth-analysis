@@ -1,0 +1,20 @@
+{
+  "name": "prophet-growth-analysis",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "type-check": "echo 'TypeScript check placeholder - configure when TS is set up'",
+    "lint": "echo 'ESLint placeholder - configure when ESLint is set up'",
+    "format": "echo 'Prettier format placeholder - configure when Prettier is set up'",
+    "format:check": "echo 'Format check placeholder - configure when Prettier is set up'",
+    "test": "echo 'Test placeholder - configure when Jest is set up'",
+    "test:coverage": "echo 'Test coverage placeholder - configure when Jest is set up'",
+    "build": "echo 'Build placeholder - configure when build system is set up'"
+  },
+  "devDependencies": {
+    "glob": "^11.0.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2"
+  }
+}

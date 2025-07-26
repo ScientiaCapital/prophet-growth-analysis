@@ -1,0 +1,19 @@
+{
+  "*.{ts,tsx,js,jsx}": [
+    "eslint --fix",
+    "prettier --write",
+    "jest --bail --findRelatedTests"
+  ],
+  "*.{json,md,yml,yaml}": [
+    "prettier --write"
+  ],
+  "*.py": [
+    "cd apps/backend-api && poetry run black",
+    "cd apps/backend-api && poetry run isort",
+    "cd apps/backend-api && poetry run flake8",
+    "cd apps/backend-api && poetry run mypy"
+  ],
+  "README.md": [
+    "node scripts/sanitize-readme.js"
+  ]
+}
